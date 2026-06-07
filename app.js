@@ -1,23 +1,15 @@
 const STORAGE_KEY = "saes-tierarzt-akten";
 const SETTINGS_KEY = "saes-tierarzt-einstellungen";
+const AUTH_KEY = "saes-tierarzt-angemeldet";
 
 const dogBreeds = [
-  "Schäferhund",
-  "Labrador Retriever",
-  "Golden Retriever",
-  "Rottweiler",
-  "Dobermann",
+  "Australien Shepherd",
   "Husky",
-  "Border Collie",
-  "Boxer",
-  "Beagle",
-  "Dalmatiner",
-  "Pitbull",
   "Mops",
-  "Chihuahua",
-  "Dackel",
-  "Mischling",
-  "Andere Rasse",
+  "Pudel",
+  "Retriever",
+  "Rottweiler",
+  "Westie",
 ];
 
 const vaccinationCatalog = [
@@ -153,6 +145,7 @@ const defaultTreatments = [
 ];
 
 const defaultStaff = [
+  { id: "staff-verwaltung", role: "Verwaltung", dn: "DN-000", name: "Verwaltung" },
   { id: "staff-dr-klein", role: "Tierarzt", dn: "DN-101", name: "Dr. Klein" },
   { id: "staff-mara-hoffmann", role: "Tierpfleger", dn: "DN-204", name: "Mara Hoffmann" },
 ];
@@ -198,9 +191,16 @@ const demoAnimals = [
 
 let animals = loadAnimals();
 let settings = loadSettings();
+let currentUser = loadCurrentUser();
 let selectedAnimalId = animals[0]?.id ?? null;
 let queuedTreatments = [];
 
+const loginScreen = document.querySelector("#loginScreen");
+const appContent = document.querySelector("#appContent");
+const loginForm = document.querySelector("#loginForm");
+const registerForm = document.querySelector("#registerForm");
+const authMessage = document.querySelector("#authMessage");
+const logoutButton = document.querySelector("#logoutButton");
 const tabs = document.querySelectorAll(".tab");
 const views = document.querySelectorAll(".view");
 const animalSearch = document.querySelector("#animalSearch");
@@ -214,6 +214,7 @@ const treatmentSettingsForm = document.querySelector("#treatmentSettingsForm");
 const settingsTreatmentList = document.querySelector("#settingsTreatmentList");
 const staffForm = document.querySelector("#staffForm");
 const staffList = document.querySelector("#staffList");
+const approvalList = document.querySelector("#approvalList");
 
 function makeId() {
   return globalThis.crypto?.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -243,7 +244,7 @@ function loadSettings() {
   const stored = localStorage.getItem(SETTINGS_KEY);
 
   if (!stored) {
-    const initialSettings = { treatments: defaultTreatments, staff: defaultStaff };
+    const initialSettings = { treatments: defaultTreatments, staff: defaultStaff, pendingUsers: [], approvedUsers: createApprovedUsers(defaultStaff) };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(initialSettings));
     return initialSettings;
   }
@@ -252,12 +253,73 @@ function loadSettings() {
     const parsed = JSON.parse(stored);
     return {
       treatments: parsed.treatments?.length ? parsed.treatments : defaultTreatments,
-      staff: parsed.staff ?? defaultStaff,
+      ...ensureManagementAccess({
+        staff: parsed.staff?.length ? parsed.staff : defaultStaff,
+        pendingUsers: parsed.pendingUsers ?? [],
+        approvedUsers: parsed.approvedUsers?.length ? parsed.approvedUsers : createApprovedUsers(parsed.staff?.length ? parsed.staff : defaultStaff),
+      }),
     };
   } catch {
-    const initialSettings = { treatments: defaultTreatments, staff: defaultStaff };
+    const initialSettings = { treatments: defaultTreatments, staff: defaultStaff, pendingUsers: [], approvedUsers: createApprovedUsers(defaultStaff) };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(initialSettings));
     return initialSettings;
+  }
+}
+
+
+function createApprovedUsers(staffMembers) {
+  return staffMembers.map((staffMember) => ({
+    id: staffMember.id,
+    name: staffMember.name,
+    dn: staffMember.dn,
+    role: staffMember.role,
+    approvedAt: new Date().toISOString(),
+  }));
+}
+
+function ensureManagementAccess(partialSettings) {
+  const managementUser = defaultStaff[0];
+  const staff = partialSettings.staff.some((staffMember) => isSameUser(staffMember, managementUser.name, managementUser.dn))
+    ? partialSettings.staff
+    : [managementUser, ...partialSettings.staff];
+  const approvedUsers = partialSettings.approvedUsers.some((user) => isSameUser(user, managementUser.name, managementUser.dn))
+    ? partialSettings.approvedUsers
+    : [{ ...managementUser, approvedAt: new Date().toISOString() }, ...partialSettings.approvedUsers];
+
+  return { ...partialSettings, staff, approvedUsers };
+}
+
+function loadCurrentUser() {
+  const stored = sessionStorage.getItem(AUTH_KEY);
+
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(stored);
+  } catch {
+    sessionStorage.removeItem(AUTH_KEY);
+    return null;
+  }
+}
+
+function setAuthMessage(message, type = "info") {
+  authMessage.textContent = message;
+  authMessage.className = `auth-message ${type}`;
+}
+
+function isSameUser(user, name, dn) {
+  return normalize(user.name) === normalize(name) && normalize(user.dn) === normalize(dn);
+}
+
+function renderAuthState() {
+  const isAuthenticated = Boolean(currentUser);
+  loginScreen.hidden = isAuthenticated;
+  appContent.hidden = !isAuthenticated;
+
+  if (isAuthenticated) {
+    logoutButton.textContent = `${currentUser.name} abmelden`;
   }
 }
 
@@ -406,7 +468,7 @@ function renderRecord() {
   content.querySelector('[data-field="name"]').textContent = animal.name;
   content.querySelector('[data-field="meta"]').textContent = `${animal.species}${animal.breed ? ` · ${animal.breed}` : ""}${animal.age ? ` · ${animal.age}` : ""}`;
   content.querySelector('[data-field="treatmentNumber"]').textContent = animal.treatmentNumber;
-  content.querySelector('[data-field="owner"]').textContent = animal.owner;
+  content.querySelector('[data-field="owner"]').textContent = animal.owner || "Kein Besitzer hinterlegt";
   content.querySelector('[data-field="phone"]').textContent = animal.phone || "Nicht hinterlegt";
   content.querySelector('[data-field="createdAt"]').textContent = formatDate(animal.createdAt);
   content.querySelector('[data-field="notes"]').textContent = animal.notes || "Keine Hinweise";
@@ -424,15 +486,17 @@ function renderRecord() {
 }
 
 function renderTreatmentOptions() {
-  const treatmentSelect = document.querySelector("#treatmentSelect");
-  treatmentSelect.innerHTML = '<option value="">Behandlung auswählen</option>';
-
-  settings.treatments.forEach((treatment) => {
-    const option = document.createElement("option");
-    option.value = treatment.id;
-    option.textContent = `${treatment.title} · ${formatPrice(treatment.price)}`;
-    treatmentSelect.append(option);
-  });
+  const treatmentGrid = document.querySelector("#treatmentCardGrid");
+  treatmentGrid.innerHTML = settings.treatments
+    .map(
+      (treatment) => `
+        <button class="selection-card" type="button" data-treatment-card="${treatment.id}">
+          <strong>${escapeHtml(treatment.title)}</strong>
+          <span>${escapeHtml(treatment.category)} · ${formatPrice(treatment.price)}</span>
+        </button>
+      `,
+    )
+    .join("");
 }
 
 function renderStaffOptions() {
@@ -448,15 +512,17 @@ function renderStaffOptions() {
 }
 
 function renderVaccinationOptions() {
-  const vaccinationSelect = document.querySelector("#vaccinationSelect");
-  vaccinationSelect.innerHTML = '<option value="">Impfstoff auswählen</option>';
-
-  vaccinationCatalog.forEach((vaccine) => {
-    const option = document.createElement("option");
-    option.value = vaccine.name;
-    option.textContent = `${vaccine.name} · ${formatPrice(vaccine.defaultPrice)}`;
-    vaccinationSelect.append(option);
-  });
+  const vaccinationGrid = document.querySelector("#vaccinationCardGrid");
+  vaccinationGrid.innerHTML = vaccinationCatalog
+    .map(
+      (vaccine) => `
+        <button class="selection-card" type="button" data-vaccination-card="${escapeHtml(vaccine.name)}">
+          <strong>${escapeHtml(vaccine.name)}</strong>
+          <span>${formatPrice(vaccine.defaultPrice)} · ${escapeHtml(vaccine.interval)}</span>
+        </button>
+      `,
+    )
+    .join("");
 }
 
 function renderQueuedTreatments() {
@@ -563,22 +629,57 @@ function bindRecordForms(animal) {
   const vaccinationForm = document.querySelector("#vaccinationForm");
   const vaccinationSelect = document.querySelector("#vaccinationSelect");
   const vaccinationNote = document.querySelector("#vaccinationNote");
+  const editAnimalForm = document.querySelector("#editAnimalForm");
+  const toggleEditAnimal = document.querySelector("#toggleEditAnimal");
 
-  treatmentSelect.addEventListener("change", () => {
-    const treatment = getTreatmentById(treatmentSelect.value);
-    treatmentPrice.value = treatment?.price ?? "";
-    treatmentDescription.value = treatment?.description ?? "";
+  document.querySelectorAll("[data-treatment-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      document.querySelectorAll("[data-treatment-card]").forEach((item) => item.classList.remove("selected"));
+      card.classList.add("selected");
+      treatmentSelect.value = card.dataset.treatmentCard;
+      const treatment = getTreatmentById(treatmentSelect.value);
+      treatmentPrice.value = treatment?.price ?? "";
+      treatmentDescription.value = treatment?.description ?? "";
+    });
   });
 
-  vaccinationSelect.addEventListener("change", () => {
-    const vaccine = getVaccineByName(vaccinationSelect.value);
-    vaccinationNote.value = vaccine ? `${vaccine.interval} · ${vaccine.purpose} · ${vaccine.dose}` : "";
+  document.querySelectorAll("[data-vaccination-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      document.querySelectorAll("[data-vaccination-card]").forEach((item) => item.classList.remove("selected"));
+      card.classList.add("selected");
+      vaccinationSelect.value = card.dataset.vaccinationCard;
+      const vaccine = getVaccineByName(vaccinationSelect.value);
+      vaccinationNote.value = vaccine ? `${vaccine.interval} · ${vaccine.purpose} · ${vaccine.dose}` : "";
+    });
+  });
+
+  editAnimalForm.name.value = animal.name ?? "";
+  editAnimalForm.owner.value = animal.owner ?? "";
+  editAnimalForm.phone.value = animal.phone ?? "";
+  editAnimalForm.notes.value = animal.notes ?? "";
+
+  toggleEditAnimal.addEventListener("click", () => {
+    editAnimalForm.hidden = !editAnimalForm.hidden;
+  });
+
+  editAnimalForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(editAnimalForm);
+    Object.assign(animal, {
+      name: formData.get("name"),
+      owner: formData.get("owner"),
+      phone: formData.get("phone"),
+      notes: formData.get("notes"),
+    });
+    saveAnimals();
+    renderApp();
   });
 
   addTreatmentToQueue.addEventListener("click", () => {
     const selectedTreatment = getTreatmentById(treatmentSelect.value);
 
     if (!selectedTreatment) {
+      window.alert("Bitte zuerst eine Behandlungskachel auswählen.");
       return;
     }
 
@@ -590,6 +691,7 @@ function bindRecordForms(animal) {
       price: treatmentPrice.value || selectedTreatment.price,
     });
     treatmentForm.reset();
+    document.querySelectorAll("[data-treatment-card]").forEach((card) => card.classList.remove("selected"));
     renderQueuedTreatments();
   });
 
@@ -625,6 +727,10 @@ function bindRecordForms(animal) {
   vaccinationForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    if (!formData.get("vaccine")) {
+      window.alert("Bitte zuerst eine Impfkachel auswählen.");
+      return;
+    }
     const vaccine = getVaccineByName(formData.get("vaccine"));
     const vaccination = {
       id: makeId(),
@@ -701,6 +807,48 @@ function renderSettings() {
     });
   });
 
+  approvalList.innerHTML = settings.pendingUsers.length
+    ? settings.pendingUsers
+        .map(
+          (user) => `
+            <article class="settings-item compact-item">
+              <div>
+                <strong>${escapeHtml(user.name)}</strong>
+                <small>Dienstnummer: ${escapeHtml(user.dn)} · angefragt am ${formatDate(user.requestedAt)}</small>
+              </div>
+              <div class="queue-actions">
+                <button class="secondary" type="button" data-approve-user="${user.id}">Freigeben</button>
+                <button class="secondary danger" type="button" data-reject-user="${user.id}">Ablehnen</button>
+              </div>
+            </article>
+          `,
+        )
+        .join("")
+    : '<p class="muted">Keine offenen Registrierungen.</p>';
+
+  approvalList.querySelectorAll("[data-approve-user]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const user = settings.pendingUsers.find((pendingUser) => pendingUser.id === button.dataset.approveUser);
+
+      if (!user) {
+        return;
+      }
+
+      settings.approvedUsers.push({ ...user, approvedAt: new Date().toISOString() });
+      settings.pendingUsers = settings.pendingUsers.filter((pendingUser) => pendingUser.id !== user.id);
+      saveSettings();
+      renderApp();
+    });
+  });
+
+  approvalList.querySelectorAll("[data-reject-user]").forEach((button) => {
+    button.addEventListener("click", () => {
+      settings.pendingUsers = settings.pendingUsers.filter((pendingUser) => pendingUser.id !== button.dataset.rejectUser);
+      saveSettings();
+      renderApp();
+    });
+  });
+
   staffList.innerHTML = settings.staff.length
     ? settings.staff
         .map(
@@ -710,7 +858,7 @@ function renderSettings() {
                 <strong>${escapeHtml(staffMember.name)}</strong>
                 <small>${escapeHtml(staffMember.role)} · ${escapeHtml(staffMember.dn)}</small>
               </div>
-              <button class="secondary danger" type="button" data-remove-staff="${staffMember.id}">Entfernen</button>
+              ${staffMember.role === "Verwaltung" ? "" : `<button class="secondary danger" type="button" data-remove-staff="${staffMember.id}">Entfernen</button>`}
             </article>
           `,
         )
@@ -719,7 +867,13 @@ function renderSettings() {
 
   staffList.querySelectorAll("[data-remove-staff]").forEach((button) => {
     button.addEventListener("click", () => {
+      const removedStaff = settings.staff.find((staffMember) => staffMember.id === button.dataset.removeStaff);
       settings.staff = settings.staff.filter((staffMember) => staffMember.id !== button.dataset.removeStaff);
+
+      if (removedStaff) {
+        settings.approvedUsers = settings.approvedUsers.filter((user) => !isSameUser(user, removedStaff.name, removedStaff.dn));
+      }
+
       saveSettings();
       renderApp();
     });
@@ -781,7 +935,7 @@ function openTreatmentPdf(animal, treatments, invoiceNumber) {
         <strong>Datum:</strong> ${formatDate(new Date().toISOString())}<br>
         <strong>Tier:</strong> ${escapeHtml(animal.name)} (${escapeHtml(animal.species)})<br>
         <strong>Aktennummer:</strong> ${escapeHtml(animal.treatmentNumber)}<br>
-        <strong>Besitzer:</strong> ${escapeHtml(animal.owner)}
+        <strong>Besitzer:</strong> ${escapeHtml(animal.owner || "Kein Besitzer hinterlegt")}
       </div>
       <table>
         <thead><tr><th>Durchgeführte Behandlung</th><th>Mitarbeitender</th><th class="price">Preis</th></tr></thead>
@@ -819,7 +973,7 @@ function openVaccinationPdf(animal, latestVaccination = null) {
       <div class="meta">
         <strong>Tier:</strong> ${escapeHtml(animal.name)} (${escapeHtml(animal.species)})<br>
         <strong>Aktennummer:</strong> ${escapeHtml(animal.treatmentNumber)}<br>
-        <strong>Besitzer:</strong> ${escapeHtml(animal.owner)}<br>
+        <strong>Besitzer:</strong> ${escapeHtml(animal.owner || "Kein Besitzer hinterlegt")}<br>
         <strong>Ausgestellt:</strong> ${formatDate(new Date().toISOString())}
       </div>
       <table>
@@ -832,6 +986,12 @@ function openVaccinationPdf(animal, latestVaccination = null) {
 }
 
 function renderApp() {
+  renderAuthState();
+
+  if (!currentUser) {
+    return;
+  }
+
   animalCount.textContent = animals.length;
   renderAnimalResults();
   renderRecord();
@@ -894,15 +1054,62 @@ treatmentSettingsForm.addEventListener("submit", (event) => {
 staffForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const formData = new FormData(event.currentTarget);
-  settings.staff.push({
+  const staffMember = {
     id: makeId(),
     role: formData.get("role"),
     dn: formData.get("dn"),
     name: formData.get("name"),
-  });
+  };
+  settings.staff.push(staffMember);
+  settings.approvedUsers.push({ ...staffMember, approvedAt: new Date().toISOString() });
   saveSettings();
   staffForm.reset();
   renderApp();
+});
+
+loginForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const formData = new FormData(event.currentTarget);
+  const name = formData.get("name");
+  const dn = formData.get("dn");
+  const approvedUser = settings.approvedUsers.find((user) => isSameUser(user, name, dn));
+
+  if (!approvedUser) {
+    setAuthMessage("Dieser Zugang ist noch nicht freigegeben oder die Daten stimmen nicht.", "error");
+    return;
+  }
+
+  currentUser = approvedUser;
+  sessionStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
+  loginForm.reset();
+  setAuthMessage("");
+  renderApp();
+});
+
+registerForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const formData = new FormData(event.currentTarget);
+  const name = formData.get("name");
+  const dn = formData.get("dn");
+
+  if (settings.approvedUsers.some((user) => isSameUser(user, name, dn))) {
+    setAuthMessage("Dieser Zugang ist bereits freigegeben. Bitte direkt anmelden.", "info");
+    return;
+  }
+
+  if (!settings.pendingUsers.some((user) => isSameUser(user, name, dn))) {
+    settings.pendingUsers.push({ id: makeId(), name, dn, requestedAt: new Date().toISOString() });
+    saveSettings();
+  }
+
+  registerForm.reset();
+  setAuthMessage("Registrierung gesendet. Die Verwaltung muss den Zugang noch freigeben.", "success");
+});
+
+logoutButton.addEventListener("click", () => {
+  currentUser = null;
+  sessionStorage.removeItem(AUTH_KEY);
+  renderAuthState();
 });
 
 renderBreedOptions();

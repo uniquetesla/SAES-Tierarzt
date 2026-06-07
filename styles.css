@@ -29,6 +29,10 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 button,
 input,
 select,
@@ -502,5 +506,116 @@ textarea:focus {
   .view,
   .view.active {
     display: block;
+  }
+}
+
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.auth-card {
+  width: min(100%, 980px);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.auth-form {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--card-strong);
+}
+
+.auth-form h2,
+.auth-form button {
+  grid-column: 1 / -1;
+}
+
+.auth-message {
+  min-height: 1.5rem;
+  margin-top: 1rem;
+  font-weight: 800;
+}
+
+.auth-message.error {
+  color: var(--danger);
+}
+
+.auth-message.success {
+  color: var(--primary-dark);
+}
+
+.auth-help {
+  margin: 1rem 0 0;
+}
+
+.compact-button {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.65rem 0.85rem;
+}
+
+.edit-record-form {
+  margin: 1rem 0 1.25rem;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.selection-grid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.selection-card {
+  width: 100%;
+  min-height: 104px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1rem;
+  background: #fff;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.selection-card:hover,
+.selection-card.selected {
+  border-color: var(--primary);
+  background: #f0fdfa;
+  box-shadow: 0 12px 28px rgba(15, 118, 110, 0.12);
+  transform: translateY(-1px);
+}
+
+.selection-card strong,
+.selection-card span {
+  display: block;
+}
+
+.selection-card span {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 900px) {
+  .auth-grid {
+    grid-template-columns: 1fr;
   }
 }
