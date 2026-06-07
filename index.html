@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SAES Tierarzt | Tierakten</title>
+    <title>SAES Tierarzt | Digitale Tierakten</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="hero">
-      <div>
-        <p class="eyebrow">GTA RP Tierarzt-System</p>
-        <h1>SAES Tierarzt-Akten</h1>
+      <div class="hero-content">
+        <p class="eyebrow">Moderne Tierarztpraxis</p>
+        <h1>Digitale Tierakten für SAES Tierarzt</h1>
         <p class="hero-copy">
-          Suche Tierakten, dokumentiere Behandlungen und verwalte Impfausweise zentral im Browser.
+          Verwalte Patientendaten, Behandlungen, Impfungen, Mitarbeitende und Preise übersichtlich an einem Ort.
         </p>
       </div>
       <div class="hero-card" aria-label="Statistik">
@@ -25,20 +25,21 @@
       <nav class="panel-tabs" aria-label="Hauptnavigation">
         <button class="tab active" type="button" data-view="searchView">Tier suchen</button>
         <button class="tab" type="button" data-view="createView">Tier anlegen</button>
+        <button class="tab" type="button" data-view="settingsView">Einstellungen</button>
       </nav>
 
       <section id="searchView" class="view active" aria-labelledby="searchTitle">
         <div class="section-header">
           <div>
-            <p class="eyebrow">Aktenpanel</p>
+            <p class="eyebrow">Aktenübersicht</p>
             <h2 id="searchTitle">Tier suchen</h2>
           </div>
-          <span class="hint">Live-Suche ignoriert Groß- und Kleinschreibung.</span>
+          <span class="hint">Live-Suche nach Name, Besitzer, Art oder Aktennummer.</span>
         </div>
 
         <label class="search-box" for="animalSearch">
           <span>Akte suchen</span>
-          <input id="animalSearch" type="search" placeholder="Name, Besitzer, Art oder Behandlungsnummer" autocomplete="off" />
+          <input id="animalSearch" type="search" placeholder="Name, Besitzer, Art oder Aktennummer" autocomplete="off" />
         </label>
 
         <div class="content-grid">
@@ -59,7 +60,7 @@
             <p class="eyebrow">Neue Akte</p>
             <h2 id="createTitle">Tier anlegen</h2>
           </div>
-          <span class="hint">Jedes Tier erhält automatisch eine individuelle Behandlungsnummer.</span>
+          <span class="hint">Jedes Tier erhält automatisch eine individuelle Aktennummer.</span>
         </div>
 
         <form id="animalForm" class="form-card">
@@ -90,7 +91,7 @@
             </label>
             <label>
               Besitzer *
-              <input name="owner" required placeholder="RP-Name des Besitzers" />
+              <input name="owner" required placeholder="Name des Besitzers" />
             </label>
             <label>
               Telefonnummer
@@ -99,10 +100,48 @@
           </div>
           <label>
             Hinweise / bekannte Vorerkrankungen
-            <textarea name="notes" rows="4" placeholder="Allergien, chronische Beschwerden oder sonstige RP-Informationen"></textarea>
+            <textarea name="notes" rows="4" placeholder="Allergien, chronische Beschwerden oder Besonderheiten"></textarea>
           </label>
           <button class="primary" type="submit">Tierakte erstellen</button>
         </form>
+      </section>
+
+      <section id="settingsView" class="view" aria-labelledby="settingsTitle">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Praxisverwaltung</p>
+            <h2 id="settingsTitle">Einstellungen</h2>
+          </div>
+          <span class="hint">Preise, Behandlungen und Teamdaten werden lokal im Browser gespeichert.</span>
+        </div>
+
+        <div class="settings-grid">
+          <section class="form-card">
+            <h3>Behandlung hinzufügen</h3>
+            <form id="treatmentSettingsForm" class="settings-form">
+              <input name="title" required placeholder="Behandlungsname" />
+              <input name="category" required placeholder="Kategorie" />
+              <input name="price" required type="number" min="0" step="10" placeholder="Preis ($)" />
+              <textarea name="description" required rows="3" placeholder="Leistungsbeschreibung"></textarea>
+              <button class="primary" type="submit">Behandlung speichern</button>
+            </form>
+            <div id="settingsTreatmentList" class="settings-list" aria-live="polite"></div>
+          </section>
+
+          <section class="form-card">
+            <h3>Tierärzte & Tierpfleger</h3>
+            <form id="staffForm" class="settings-form compact-form">
+              <select name="role" required>
+                <option value="Tierarzt">Tierarzt</option>
+                <option value="Tierpfleger">Tierpfleger</option>
+              </select>
+              <input name="dn" required placeholder="DN" />
+              <input name="name" required placeholder="Name" />
+              <button class="primary" type="submit">Mitarbeitenden speichern</button>
+            </form>
+            <div id="staffList" class="settings-list" aria-live="polite"></div>
+          </section>
+        </div>
       </section>
     </main>
 
@@ -124,24 +163,24 @@
       </div>
 
       <div class="record-actions">
-        <button class="secondary" type="button" id="printVaccinationCard">Impfausweis drucken</button>
+        <button class="secondary" type="button" id="printVaccinationCard">Impfausweis als PDF</button>
         <button class="secondary danger" type="button" id="deleteRecord">Akte löschen</button>
       </div>
 
       <section class="timeline-section">
         <div class="subsection-title">
-          <h3>Behandlungen</h3>
+          <h3>Behandlungen abschließen</h3>
           <span data-field="treatmentCount"></span>
         </div>
-        <form id="treatmentForm" class="inline-form">
-          <select id="treatmentSelect" name="title" required aria-label="Behandlung auswählen"></select>
-          <input name="doctor" placeholder="Tierarzt" />
-          <input id="treatmentPrice" name="price" type="number" min="0" step="50" placeholder="Preis verbuchen ($)" />
-          <textarea id="treatmentDescription" name="description" required rows="4" placeholder="Leistungen / Notizen zur Behandlung"></textarea>
-          <div id="treatmentInfo" class="info-box" aria-live="polite"></div>
-          <button class="primary" type="submit">Behandlung verbuchen</button>
+        <form id="treatmentForm" class="inline-form treatment-workflow">
+          <select id="treatmentSelect" name="title" aria-label="Behandlung auswählen"></select>
+          <select id="staffSelect" name="staff" aria-label="Mitarbeitenden auswählen"></select>
+          <input id="treatmentPrice" name="price" type="number" min="0" step="10" placeholder="Preis ($)" />
+          <textarea id="treatmentDescription" name="description" rows="3" placeholder="Leistungen / Notizen zur Behandlung"></textarea>
+          <button class="secondary" type="button" id="addTreatmentToQueue">Zur Sammelbehandlung hinzufügen</button>
+          <button class="primary" type="submit">Sammelbehandlung abschließen & PDF erstellen</button>
         </form>
-        <div id="treatmentCatalogList" class="catalog-list" aria-label="Behandlungskatalog"></div>
+        <div id="queuedTreatments" class="queued-list" aria-live="polite"></div>
         <div id="treatmentList" class="timeline"></div>
       </section>
 
@@ -154,8 +193,7 @@
           <select id="vaccinationSelect" name="vaccine" required aria-label="Impfstoff auswählen"></select>
           <input name="validUntil" type="date" aria-label="Gültig bis" />
           <textarea id="vaccinationNote" name="note" rows="3" placeholder="Notiz zur Impfung"></textarea>
-          <div id="vaccinationInfo" class="info-box" aria-live="polite"></div>
-          <button class="primary" type="submit">Impfung eintragen</button>
+          <button class="primary" type="submit">Impfung eintragen & PDF erstellen</button>
         </form>
         <div id="vaccinationList" class="timeline compact"></div>
       </section>
