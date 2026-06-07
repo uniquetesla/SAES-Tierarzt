@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SAES Tierarzt | Tierakten</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">GTA RP Tierarzt-System</p>
+        <h1>SAES Tierarzt-Akten</h1>
+        <p class="hero-copy">
+          Suche Tierakten, dokumentiere Behandlungen und verwalte Impfausweise zentral im Browser.
+        </p>
+      </div>
+      <div class="hero-card" aria-label="Statistik">
+        <span id="animalCount">0</span>
+        <small>registrierte Tiere</small>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <nav class="panel-tabs" aria-label="Hauptnavigation">
+        <button class="tab active" type="button" data-view="searchView">Tier suchen</button>
+        <button class="tab" type="button" data-view="createView">Tier anlegen</button>
+      </nav>
+
+      <section id="searchView" class="view active" aria-labelledby="searchTitle">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Aktenpanel</p>
+            <h2 id="searchTitle">Tier suchen</h2>
+          </div>
+          <span class="hint">Live-Suche ignoriert Groß- und Kleinschreibung.</span>
+        </div>
+
+        <label class="search-box" for="animalSearch">
+          <span>Akte suchen</span>
+          <input id="animalSearch" type="search" placeholder="Name, Besitzer, Art oder Behandlungsnummer" autocomplete="off" />
+        </label>
+
+        <div class="content-grid">
+          <aside class="results-card">
+            <h3>Suchergebnisse</h3>
+            <div id="animalResults" class="animal-results" aria-live="polite"></div>
+          </aside>
+
+          <section id="recordPanel" class="record-panel empty-state">
+            <p>Wähle ein Tier aus, um die vollständige Akte zu öffnen.</p>
+          </section>
+        </div>
+      </section>
+
+      <section id="createView" class="view" aria-labelledby="createTitle">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Neue Akte</p>
+            <h2 id="createTitle">Tier anlegen</h2>
+          </div>
+          <span class="hint">Jedes Tier erhält automatisch eine individuelle Behandlungsnummer.</span>
+        </div>
+
+        <form id="animalForm" class="form-card">
+          <div class="form-grid">
+            <label>
+              Tiername *
+              <input name="name" required placeholder="z. B. Rex" />
+            </label>
+            <label>
+              Tierart *
+              <input name="species" required placeholder="z. B. Hund, Katze, Pferd" />
+            </label>
+            <label>
+              Rasse
+              <input name="breed" placeholder="z. B. Schäferhund" />
+            </label>
+            <label>
+              Alter
+              <input name="age" placeholder="z. B. 4 Jahre" />
+            </label>
+            <label>
+              Besitzer *
+              <input name="owner" required placeholder="RP-Name des Besitzers" />
+            </label>
+            <label>
+              Telefonnummer
+              <input name="phone" placeholder="z. B. 555-0123" />
+            </label>
+          </div>
+          <label>
+            Hinweise / bekannte Vorerkrankungen
+            <textarea name="notes" rows="4" placeholder="Allergien, chronische Beschwerden oder sonstige RP-Informationen"></textarea>
+          </label>
+          <button class="primary" type="submit">Tierakte erstellen</button>
+        </form>
+      </section>
+    </main>
+
+    <template id="recordTemplate">
+      <div class="record-header">
+        <div>
+          <p class="eyebrow">Tierakte</p>
+          <h2 data-field="name"></h2>
+          <p class="muted" data-field="meta"></p>
+        </div>
+        <span class="treatment-number" data-field="treatmentNumber"></span>
+      </div>
+
+      <div class="record-details">
+        <div><strong>Besitzer:</strong> <span data-field="owner"></span></div>
+        <div><strong>Telefon:</strong> <span data-field="phone"></span></div>
+        <div><strong>Erstellt:</strong> <span data-field="createdAt"></span></div>
+        <div><strong>Hinweise:</strong> <span data-field="notes"></span></div>
+      </div>
+
+      <div class="record-actions">
+        <button class="secondary" type="button" id="printVaccinationCard">Impfausweis drucken</button>
+        <button class="secondary danger" type="button" id="deleteRecord">Akte löschen</button>
+      </div>
+
+      <section class="timeline-section">
+        <div class="subsection-title">
+          <h3>Behandlungen</h3>
+          <span data-field="treatmentCount"></span>
+        </div>
+        <form id="treatmentForm" class="inline-form">
+          <input name="title" required placeholder="Behandlung / Diagnose" />
+          <input name="doctor" placeholder="Tierarzt" />
+          <textarea name="description" required rows="3" placeholder="Was wurde gemacht?"></textarea>
+          <button class="primary" type="submit">Behandlung speichern</button>
+        </form>
+        <div id="treatmentList" class="timeline"></div>
+      </section>
+
+      <section class="timeline-section">
+        <div class="subsection-title">
+          <h3>Impfausweis</h3>
+          <span data-field="vaccinationCount"></span>
+        </div>
+        <form id="vaccinationForm" class="inline-form two-columns">
+          <input name="vaccine" required placeholder="Impfung / Wirkstoff" />
+          <input name="validUntil" type="date" aria-label="Gültig bis" />
+          <textarea name="note" rows="2" placeholder="Notiz zur Impfung"></textarea>
+          <button class="primary" type="submit">Impfung eintragen</button>
+        </form>
+        <div id="vaccinationList" class="timeline compact"></div>
+      </section>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
