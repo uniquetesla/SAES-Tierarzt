@@ -70,11 +70,19 @@
             </label>
             <label>
               Tierart *
-              <input name="species" required placeholder="z. B. Hund, Katze, Pferd" />
+              <select name="species" required>
+                <option value="">Tierart auswählen</option>
+                <option value="Hund">Hund</option>
+                <option value="Katze">Katze</option>
+                <option value="Pferd">Pferd</option>
+                <option value="Kaninchen">Kaninchen</option>
+                <option value="Vogel">Vogel</option>
+                <option value="Wildtier">Wildtier</option>
+              </select>
             </label>
             <label>
-              Rasse
-              <input name="breed" placeholder="z. B. Schäferhund" />
+              Hunderasse
+              <select id="breedSelect" name="breed"></select>
             </label>
             <label>
               Alter
@@ -126,11 +134,14 @@
           <span data-field="treatmentCount"></span>
         </div>
         <form id="treatmentForm" class="inline-form">
-          <input name="title" required placeholder="Behandlung / Diagnose" />
+          <select id="treatmentSelect" name="title" required aria-label="Behandlung auswählen"></select>
           <input name="doctor" placeholder="Tierarzt" />
-          <textarea name="description" required rows="3" placeholder="Was wurde gemacht?"></textarea>
-          <button class="primary" type="submit">Behandlung speichern</button>
+          <input id="treatmentPrice" name="price" type="number" min="0" step="50" placeholder="Preis verbuchen ($)" />
+          <textarea id="treatmentDescription" name="description" required rows="4" placeholder="Leistungen / Notizen zur Behandlung"></textarea>
+          <div id="treatmentInfo" class="info-box" aria-live="polite"></div>
+          <button class="primary" type="submit">Behandlung verbuchen</button>
         </form>
+        <div id="treatmentCatalogList" class="catalog-list" aria-label="Behandlungskatalog"></div>
         <div id="treatmentList" class="timeline"></div>
       </section>
 
@@ -140,9 +151,10 @@
           <span data-field="vaccinationCount"></span>
         </div>
         <form id="vaccinationForm" class="inline-form two-columns">
-          <input name="vaccine" required placeholder="Impfung / Wirkstoff" />
+          <select id="vaccinationSelect" name="vaccine" required aria-label="Impfstoff auswählen"></select>
           <input name="validUntil" type="date" aria-label="Gültig bis" />
-          <textarea name="note" rows="2" placeholder="Notiz zur Impfung"></textarea>
+          <textarea id="vaccinationNote" name="note" rows="3" placeholder="Notiz zur Impfung"></textarea>
+          <div id="vaccinationInfo" class="info-box" aria-live="polite"></div>
           <button class="primary" type="submit">Impfung eintragen</button>
         </form>
         <div id="vaccinationList" class="timeline compact"></div>
