@@ -1,15 +1,17 @@
 # SAES Tierarzt-Akten
 
-Ein browserbasiertes Webtool für GTA-RP-Tierärzte, um Tierakten, Behandlungen und Impfausweise direkt im Browser zu verwalten.
+Ein browserbasiertes Webtool für moderne Tierarztpraxen, um Tierakten, Sammelbehandlungen, Teamdaten, Preise und Impfausweise direkt im Browser zu verwalten.
 
 ## Funktionen
 
-- Panel mit den Bereichen **Tier suchen** und **Tier anlegen**.
-- Live-Suche nach Name, Besitzer, Tierart, Telefonnummer, Behandlungsnummer, Behandlungen und Impfungen.
+- Panel mit den Bereichen **Tier suchen**, **Tier anlegen** und **Einstellungen**.
+- Live-Suche nach Name, Besitzer, Tierart, Telefonnummer, Aktennummer, Behandlungen und Impfungen.
 - Groß- und Kleinschreibung wird bei der Suche ignoriert.
-- Neue Tiere erhalten automatisch eine individuelle Behandlungsnummer im Format `SAES-JAHR-NUMMER`.
-- Pro Tierakte können Behandlungen und Impfungen gespeichert werden.
-- Der Impfausweis kann über die Druckfunktion der Seite ausgegeben werden.
+- Neue Tiere erhalten automatisch eine individuelle Aktennummer im Format `SAES-NUMMER`.
+- Pro Tierakte können mehrere Behandlungen in einer Sammelbehandlung hinterlegt und gemeinsam abgeschlossen werden.
+- Nach Abschluss einer Behandlung wird ein druckbares PDF-Dokument mit Positionen und Preisen geöffnet.
+- Der Impfausweis wird ebenfalls als druckbares PDF-Dokument inklusive Impfdetails und Preis geöffnet.
+- Behandlungen, Preise, Tierärzte und Tierpfleger können auf der Einstellungsseite verwaltet werden.
 - Alle Daten werden lokal im Browser per `localStorage` gespeichert.
 
 ## Nutzung
